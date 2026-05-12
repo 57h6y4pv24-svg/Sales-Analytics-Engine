@@ -1,0 +1,84 @@
+# Copy and paste this code into Google Colab
+
+!pip install pandas matplotlib openpyxl -q
+
+from google.colab import files
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# SAMPLE DATA
+data = {
+    'Date': ['2024-01-15','2024-01-16','2024-02-10','2024-02-15','2024-03-05'],
+    'Customer': ['John','Maria','Pedro','Maria','John'],
+    'Product': ['Shampoo','Sunscreen','Face Soap','Shampoo','Sunscreen'],
+    'Category': ['Personal Care','Skin Care','Skin Care','Personal Care','Skin Care'],
+    'Quantity': [2,1,3,2,1],
+    'Unit Price': [45,120,60,45,120]
+}
+
+df = pd.DataFrame(data)
+df['Total Sales'] = df['Quantity'] * df['Unit Price']
+df['Date'] = pd.to_datetime(df['Date'])
+df['Month'] = df['Date'].dt.month_name()
+
+products = df.groupby('Product')['Quantity'].sum().sort_values(ascending=False)
+customers = df.groupby('Customer')['Total Sales'].sum().sort_values(ascending=False)
+categories = df.groupby('Category')['Total Sales'].sum().sort_values(ascending=False)
+monthly_sales = df.groupby('Month')['Total Sales'].sum()
+
+plt.figure(figsize=(10, 6))
+products.plot(kind='bar', color='steelblue')
+plt.title('Top Products', fontsize=14, fontweight='bold')
+plt.xlabel('Product')
+plt.ylabel('Quantity')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('01_products.png', dpi=300)
+plt.show()
+
+plt.figure(figsize=(10, 6))
+customers.plot(kind='bar', color='coral')
+plt.title('Customer Revenue', fontsize=14, fontweight='bold')
+plt.xlabel('Customer')
+plt.ylabel('Revenue (Q)')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('02_customers.png', dpi=300)
+plt.show()
+
+plt.figure(figsize=(10, 8))
+categories.plot(kind='pie', autopct='%1.1f%%')
+plt.title('Revenue by Category', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.savefig('03_categories.png', dpi=300)
+plt.show()
+
+with pd.ExcelWriter('sales_report.xlsx', engine='openpyxl') as writer:
+    df.to_excel(writer, sheet_name='Data', index=False)
+    products.to_excel(writer, sheet_name='Products')
+    customers.to_excel(writer, sheet_name='Customers')
+    categories.to_excel(writer, sheet_name='Categories')
+    monthly_sales.to_excel(writer, sheet_name='Monthly Sales')
+
+print('✓ Excel created: sales_report.xlsx')
+
+summary = f"""
+EXECUTIVE SUMMARY
+
+Top product: {products.idxmax()}
+Top customer: {customers.idxmax()}
+Top category: {categories.idxmax()}
+Total sales: Q{df['Total Sales'].sum():,.2f}
+"""
+
+with open('executive_summary.txt', 'w', encoding='utf-8') as f:
+    f.write(summary)
+
+print('✓ Summary saved')
+
+from google.colab import files
+files.download('sales_report.xlsx')
+files.download('executive_summary.txt')
+files.download('01_products.png')
+files.download('02_customers.png')
+files.download('03_categories.png')
